@@ -51,10 +51,11 @@ function updateEvalDisplay(evalVal, depth, moves) {
     var capped = Math.max(-1000, Math.min(1000, evalVal));
     var pct = 50 + (capped / 1000) * 45;
     fillEl.style.height = pct + '%';
-  } else if (typeof evalVal === 'string' && evalVal.startsWith('M')) {
+  } else if (typeof evalVal === 'string' && (evalVal.indexOf('M') !== -1)) {
     evalEl.textContent = evalVal;
-    evalEl.className = 'eval-value positive';
-    fillEl.style.height = '95%';
+    var isPositive = evalVal.charAt(0) !== '-';
+    evalEl.className = 'eval-value ' + (isPositive ? 'positive' : 'negative');
+    fillEl.style.height = isPositive ? '95%' : '5%';
   }
 
   depthEl.textContent = 'depth ' + (depth || 0);

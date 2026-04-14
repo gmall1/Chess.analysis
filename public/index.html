@@ -2178,9 +2178,11 @@ function goToMove(idx) {
     chess.reset();
   } else {
     chess.load(gameMoves[idx].fen);
-    var history = chess.history({ verbose: true });
-    var last = history[history.length - 1];
-    if (last) highlightLastMove(last.from, last.to);
+    // Derive from/to by replaying the move from the previous position
+    var prevFen = idx === 0 ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' : gameMoves[idx - 1].fen;
+    var tempChess = new Chess(prevFen);
+    var replayedMove = tempChess.move(gameMoves[idx].san);
+    if (replayedMove) highlightLastMove(replayedMove.from, replayedMove.to);
     else clearHighlights();
   }
 
@@ -2266,9 +2268,10 @@ var MOVE_COLORS = {
   book: '#4a9eda', inaccuracy: '#f0b429', mistake: '#e07b39', blunder: '#cc3333', forced: '#aaa'
 };
 
-function classifyMove(before, after) {
+function classifyMove(before, after, isWhiteMove) {
   if (before === null || after === null) return 'good';
-  var diff = before - after;
+  // From the mover's perspective: positive diff = improved position
+  var diff = isWhiteMove ? (after - before) : (before - after);
   if (Math.abs(diff) < 0.1) return 'best';
   if (diff < -3) return 'blunder';
   if (diff < -1.5) return 'mistake';
@@ -2351,7 +2354,8 @@ function updateSummary(counts) {
 // OPENING DETECTION
 // ===============================================================
 function getMoveHistory() {
-  return chess.history().join(' ');
+  if (currentMoveIndex < 0) return '';
+  return gameMoves.slice(0, currentMoveIndex + 1).map(function(m) { return m.san; }).join(' ');
 }
 
 function detectOpening() {
@@ -2598,7 +2602,8 @@ function parsePGNIntoMoves(pgn) {
     var mv = moves[i];
     chess.move({ from: mv.from, to: mv.to, promotion: mv.promotion || 'q' });
     var fakeEval = prevEval + (Math.random() - 0.52) * 0.8;
-    var cls = classifyMove(prevEval, fakeEval);
+    var isWhite = (i % 2 === 0);
+    var cls = classifyMove(prevEval, fakeEval, isWhite);
     gameMoves.push({ san: mv.san, fen: chess.fen(), eval: fakeEval, class: cls });
     prevEval = fakeEval;
   }

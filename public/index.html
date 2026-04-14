@@ -1316,59 +1316,50 @@ async function saveCurrentAnalysis() {
 // ACCURACY CALCULATION
 // ===============================================================
 function computeAccuracy() {
-  // Accuracy based on centipawn loss (CPL)
-  // Formula: accuracy = max(0, 100 - (avgCPL * scaleFactor))
-  // Uses a win-probability model for more meaningful accuracy
-  var whiteEvals = [];
-  var blackEvals = [];
+  // Accuracy based on win-probability preservation per move.
+  // Compares eval before each move (previous ply) to eval after (current ply),
+  // so each move's accuracy reflects only that player's move quality.
+  var whiteAccuracies = [];
+  var blackAccuracies = [];
 
   for (var i = 0; i < gameMoves.length; i++) {
-    if (gameMoves[i].eval !== null && gameMoves[i].eval !== undefined) {
-      if (i % 2 === 0) {
-        whiteEvals.push(gameMoves[i].eval);
-      } else {
-        blackEvals.push(gameMoves[i].eval);
-      }
+    var evalBefore = i === 0 ? 0 : gameMoves[i - 1].eval;
+    var evalAfter = gameMoves[i].eval;
+    if (evalBefore === null || evalAfter === null || evalBefore === undefined || evalAfter === undefined) continue;
+
+    var isWhite = (i % 2 === 0);
+    // From the moving player's perspective
+    var wpBefore, wpAfter;
+    if (isWhite) {
+      wpBefore = winProbability(evalBefore);
+      wpAfter = winProbability(evalAfter);
+    } else {
+      wpBefore = winProbability(-evalBefore);
+      wpAfter = winProbability(-evalAfter);
+    }
+
+    var moveAcc;
+    if (wpBefore <= 0.001) {
+      moveAcc = 100;
+    } else {
+      moveAcc = Math.min(100, (wpAfter / wpBefore) * 100);
+    }
+    moveAcc = Math.max(0, moveAcc);
+
+    if (isWhite) {
+      whiteAccuracies.push(moveAcc);
+    } else {
+      blackAccuracies.push(moveAcc);
     }
   }
 
-  var whiteAcc = calcPlayerAccuracy(whiteEvals, 'white');
-  var blackAcc = calcPlayerAccuracy(blackEvals, 'black');
+  var whiteAcc = averageAccuracy(whiteAccuracies);
+  var blackAcc = averageAccuracy(blackAccuracies);
 
   return { white: whiteAcc, black: blackAcc };
 }
 
-function calcPlayerAccuracy(evals, color) {
-  if (evals.length < 2) return null;
-
-  // Win probability model: winP = 1 / (1 + 10^(-eval/4))
-  // Accuracy per move = min(winP_after / winP_before, 1) for that player's moves
-  var accuracies = [];
-
-  for (var i = 1; i < evals.length; i++) {
-    var before = evals[i - 1];
-    var after = evals[i];
-
-    // From the perspective of the player
-    var wpBefore, wpAfter;
-    if (color === 'white') {
-      wpBefore = winProbability(before);
-      wpAfter = winProbability(after);
-    } else {
-      wpBefore = winProbability(-before);
-      wpAfter = winProbability(-after);
-    }
-
-    // Accuracy = how much of the win probability was preserved
-    var moveAcc;
-    if (wpBefore <= 0.001) {
-      moveAcc = wpAfter <= 0.001 ? 100 : 100;
-    } else {
-      moveAcc = Math.min(100, (wpAfter / wpBefore) * 100);
-    }
-    accuracies.push(Math.max(0, moveAcc));
-  }
-
+function averageAccuracy(accuracies) {
   if (accuracies.length === 0) return null;
   var sum = accuracies.reduce(function(s, v) { return s + v; }, 0);
   return Math.round((sum / accuracies.length) * 10) / 10;

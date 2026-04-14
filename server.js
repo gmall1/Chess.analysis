@@ -8,7 +8,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'chess-analysis-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || (() => { console.warn('WARNING: JWT_SECRET not set, using random secret (sessions will not persist across restarts)'); return require('crypto').randomBytes(32).toString('hex'); })();
 
 // Middleware
 app.use(cors());
@@ -174,7 +174,7 @@ app.post('/api/analyses', authenticateToken, (req, res) => {
   const id = uuidv4();
   db.prepare(
     'INSERT INTO analyses (id, user_id, pgn, white_name, black_name, white_accuracy, black_accuracy, result, opening_name, opening_eco) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).run(id, req.user.id, pgn || null, whiteName || null, blackName || null, whiteAccuracy || null, blackAccuracy || null, result || null, openingName || null, openingEco || null);
+  ).run(id, req.user.id, pgn || null, whiteName || null, blackName || null, whiteAccuracy != null ? whiteAccuracy : null, blackAccuracy != null ? blackAccuracy : null, result || null, openingName || null, openingEco || null);
 
   // Update user stats
   const allAnalyses = db.prepare('SELECT white_accuracy, black_accuracy FROM analyses WHERE user_id = ?').all(req.user.id);

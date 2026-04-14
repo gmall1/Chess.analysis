@@ -1,0 +1,5 @@
+node_modules/
+chess_analysis.db
+*.db-journal
+*.db-wal
+.env

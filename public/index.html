@@ -1264,6 +1264,12 @@ async function submitAuth() {
   }
 }
 
+function escapeHtml(str) {
+  var div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 function logout() {
   authToken = null;
   currentUser = null;
@@ -1330,23 +1336,23 @@ async function loadProfile() {
 
     // Update stats
     document.getElementById('stat-total').textContent = data.stats.total_analyses;
-    document.getElementById('stat-avg').textContent = data.stats.avg_accuracy > 0 ? data.stats.avg_accuracy.toFixed(1) + '%' : '—';
+    document.getElementById('stat-avg').textContent = data.stats.avg_accuracy != null && data.stats.avg_accuracy >= 0 ? data.stats.avg_accuracy.toFixed(1) + '%' : '—';
 
     // Profile page
     document.getElementById('profile-title').textContent = currentUser.username + "'s Profile";
     document.getElementById('profile-total-analyses').textContent = data.stats.total_analyses;
-    document.getElementById('profile-avg-accuracy').textContent = data.stats.avg_accuracy > 0 ? data.stats.avg_accuracy.toFixed(1) + '%' : '—';
-    document.getElementById('profile-best-accuracy').textContent = data.stats.best_accuracy > 0 ? data.stats.best_accuracy.toFixed(1) + '%' : '—';
+    document.getElementById('profile-avg-accuracy').textContent = data.stats.avg_accuracy != null && data.stats.avg_accuracy >= 0 ? data.stats.avg_accuracy.toFixed(1) + '%' : '—';
+    document.getElementById('profile-best-accuracy').textContent = data.stats.best_accuracy != null && data.stats.best_accuracy >= 0 ? data.stats.best_accuracy.toFixed(1) + '%' : '—';
 
     // Recent analyses
     const historyEl = document.getElementById('profile-history');
     if (data.recentAnalyses && data.recentAnalyses.length > 0) {
       historyEl.innerHTML = data.recentAnalyses.map(function(a) {
         return '<div class="profile-history-item">' +
-          '<span>' + (a.white_name || 'White') + ' vs ' + (a.black_name || 'Black') + '</span>' +
+          '<span>' + escapeHtml(a.white_name || 'White') + ' vs ' + escapeHtml(a.black_name || 'Black') + '</span>' +
           '<span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;color:var(--text-secondary);">' +
-            (a.white_accuracy ? a.white_accuracy.toFixed(1) + '%' : '—') + ' / ' +
-            (a.black_accuracy ? a.black_accuracy.toFixed(1) + '%' : '—') +
+            (a.white_accuracy != null ? a.white_accuracy.toFixed(1) + '%' : '—') + ' / ' +
+            (a.black_accuracy != null ? a.black_accuracy.toFixed(1) + '%' : '—') +
           '</span>' +
           '<span style="font-size:11px;color:var(--text-muted);">' + (a.created_at || '') + '</span>' +
         '</div>';

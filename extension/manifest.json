@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Chess Analysis Helper",
+  "version": "1.0.0",
+  "description": "Live chess analysis with best-move arrows on chess.com. Powered by Stockfish.",
+  "permissions": ["activeTab", "storage"],
+  "icons": {
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.chess.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["stockfish-worker.js"],
+      "matches": ["*://*.chess.com/*"]
+    }
+  ]
+}

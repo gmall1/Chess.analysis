@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 340px;
+      min-height: 420px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+    }
+    .header {
+      background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .header svg { width: 28px; height: 28px; }
+    .header-text h1 { font-size: 15px; font-weight: 700; color: #fff; }
+    .header-text span { font-size: 11px; color: #8892b0; }
+    .status-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 12px;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    .status-dot.ready { background: #64ffda; }
+    .status-dot.loading { background: #f0b429; }
+    .status-dot.off { background: #666; animation: none; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .toggle-label { font-size: 13px; font-weight: 500; }
+    .toggle-sub { font-size: 11px; color: #8892b0; margin-top: 2px; }
+    .toggle {
+      width: 40px; height: 22px; border-radius: 11px;
+      background: #333; cursor: pointer; position: relative;
+      transition: background .2s;
+    }
+    .toggle.active { background: #64ffda; }
+    .toggle::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; transition: transform .2s;
+    }
+    .toggle.active::after { transform: translateX(18px); }
+
+    .section { padding: 14px 16px; }
+    .section-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: #8892b0; margin-bottom: 10px;
+    }
+
+    .eval-display {
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 8px; padding: 12px;
+    }
+    .eval-bar-mini {
+      width: 8px; height: 48px; border-radius: 4px;
+      background: linear-gradient(to top, #333 50%, #e0e0e0 50%);
+      overflow: hidden; position: relative;
+    }
+    .eval-bar-fill {
+      position: absolute; bottom: 0; width: 100%;
+      background: #e0e0e0; transition: height .3s;
+    }
+    .eval-text { flex: 1; }
+    .eval-value { font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .eval-value.positive { color: #e0e0e0; }
+    .eval-value.negative { color: #888; }
+    .eval-label { font-size: 11px; color: #8892b0; margin-top: 2px; }
+
+    .best-moves { display: flex; flex-direction: column; gap: 6px; }
+    .best-move-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 6px;
+      background: rgba(255,255,255,0.04);
+      font-size: 13px;
+    }
+    .move-rank {
+      width: 20px; height: 20px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+    }
+    .move-rank.r1 { background: #64ffda; color: #1a1a2e; }
+    .move-rank.r2 { background: #0f3460; color: #64ffda; }
+    .move-san { font-family: 'JetBrains Mono', monospace; font-weight: 600; flex: 1; }
+    .move-eval { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8892b0; }
+
+    .accuracy-row {
+      display: flex; gap: 10px; margin-top: 6px;
+    }
+    .accuracy-card {
+      flex: 1; padding: 10px; border-radius: 6px;
+      background: rgba(255,255,255,0.04); text-align: center;
+    }
+    .accuracy-label { font-size: 11px; color: #8892b0; margin-bottom: 4px; }
+    .accuracy-value { font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .accuracy-value.white { color: #e0e0e0; }
+    .accuracy-value.black { color: #8892b0; }
+
+    .no-game {
+      text-align: center; padding: 30px 16px;
+      color: #666; font-size: 13px;
+    }
+    .no-game svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.3; }
+    .no-game p { margin-top: 8px; font-size: 12px; }
+
+    .footer {
+      padding: 10px 16px; text-align: center;
+      font-size: 10px; color: #555;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .footer a { color: #64ffda; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#64ffda" stroke-width="2">
+      <path d="M12 2L15 8H9L12 2Z"/>
+      <rect x="8" y="8" width="8" height="4" rx="1"/>
+      <path d="M6 12H18L19 20H5L6 12Z"/>
+      <line x1="5" y1="22" x2="19" y2="22" stroke-width="2.5"/>
+    </svg>
+    <div class="header-text">
+      <h1>Chess Analysis Helper</h1>
+      <span>Stockfish-powered live analysis</span>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot loading" id="status-dot"></div>
+    <span id="status-text">Initializing engine...</span>
+  </div>
+
+  <div class="toggle-row">
+    <div>
+      <div class="toggle-label">Live Arrow Overlay</div>
+      <div class="toggle-sub">Show best moves on chess.com board</div>
+    </div>
+    <div class="toggle active" id="toggle-arrows" onclick="toggleArrows()"></div>
+  </div>
+
+  <div class="toggle-row">
+    <div>
+      <div class="toggle-label">Auto-Analyze</div>
+      <div class="toggle-sub">Analyze positions as moves are played</div>
+    </div>
+    <div class="toggle active" id="toggle-auto" onclick="toggleAuto()"></div>
+  </div>
+
+  <div class="section" id="eval-section">
+    <div class="section-title">Evaluation</div>
+    <div class="eval-display">
+      <div class="eval-bar-mini">
+        <div class="eval-bar-fill" id="eval-fill" style="height:50%"></div>
+      </div>
+      <div class="eval-text">
+        <div class="eval-value positive" id="eval-value">+0.0</div>
+        <div class="eval-label" id="eval-depth">depth 0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="moves-section">
+    <div class="section-title">Best Moves</div>
+    <div class="best-moves" id="best-moves">
+      <div class="best-move-item">
+        <span class="move-rank r1">1</span>
+        <span class="move-san" id="move1-san">—</span>
+        <span class="move-eval" id="move1-eval"></span>
+      </div>
+      <div class="best-move-item">
+        <span class="move-rank r2">2</span>
+        <span class="move-san" id="move2-san">—</span>
+        <span class="move-eval" id="move2-eval"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="accuracy-section" style="display:none;">
+    <div class="section-title">Game Accuracy</div>
+    <div class="accuracy-row">
+      <div class="accuracy-card">
+        <div class="accuracy-label">White</div>
+        <div class="accuracy-value white" id="acc-white">—</div>
+      </div>
+      <div class="accuracy-card">
+        <div class="accuracy-label">Black</div>
+        <div class="accuracy-value black" id="acc-black">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="no-game" id="no-game" style="display:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 2L15 8H9L12 2Z"/><rect x="8" y="8" width="8" height="4" rx="1"/>
+      <path d="M6 12H18L19 20H5L6 12Z"/><line x1="5" y1="22" x2="19" y2="22"/>
+    </svg>
+    <div>No active game detected</div>
+    <p>Navigate to a game on chess.com to start analysis</p>
+  </div>
+
+  <div class="footer">
+    Powered by Stockfish &middot; <a href="https://github.com/gmall1/Chess.analysis" target="_blank">GitHub</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
